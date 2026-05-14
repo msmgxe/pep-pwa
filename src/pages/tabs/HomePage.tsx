@@ -139,19 +139,20 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Greeting */}
-              <div style={{
-                background: 'var(--pep-purple)', borderRadius: 16,
-                padding: '18px 20px', marginBottom: 12,
-                boxShadow: '0 2px 10px rgba(123,45,139,0.25)'
+              <section style={{
+                background: '#4682B4',
+                borderRadius: 14,
+                padding: '20px 18px',
+                marginBottom: 14,
+                boxShadow: '0 3px 12px rgba(70,130,180,0.3)'
               }}>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 500 }}>
+                <p style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.8)', fontSize: 12, letterSpacing: 0.3 }}>
                   {greeting(t)}
                 </p>
-                <h2 style={{ margin: '4px 0 0', color: '#fff', fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
+                <p style={{ margin: 0, color: '#fff', fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>
                   {name}
-                </h2>
-              </div>
+                </p>
+              </section>
 
               {/* Next appointment */}
               <div className="pep-card" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
