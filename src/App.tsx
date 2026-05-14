@@ -15,6 +15,11 @@ import TestUploadPage from './pages/TestUploadPage'
 export default function App() {
   const { user, loading, hasProfile } = useAuth()
 
+  // Test page bypasses auth entirely
+  if (window.location.pathname === '/test-upload') {
+    return <IonApp><TestUploadPage /></IonApp>
+  }
+
   if (loading) {
     return (
       <IonApp>

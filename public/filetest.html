@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Input Test</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 480px; margin: 0 auto; background: #f9f0fc; }
+  h2 { color: #7B2D8B; }
+  .box { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tag { font-size: 11px; font-weight: 700; background: #7B2D8B; color: #fff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-bottom: 8px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; background: #7B2D8B; color: #fff; border: none; min-height: 48px; min-width: 160px; position: relative; }
+  input[type=file] { font-size: 16px; }
+  #log { background: #1a1a1a; border-radius: 12px; padding: 14px; min-height: 60px; font-family: monospace; font-size: 13px; margin-top: 20px; }
+  .ok  { color: #4ade80; }
+  .err { color: #f87171; }
+  .ts  { color: #666; }
+</style>
+</head>
+<body>
+<h2>📁 File Input Test</h2>
+<p style="font-size:13px;color:#888">Toca cada botón. Reporta cuáles abren galería/cámara.</p>
+
+<!-- T1 -->
+<div class="box">
+  <span class="tag">T1</span> input visible (sin estilos)
+  <br><br>
+  <input type="file" accept="image/*" onchange="log('T1-visible',this)">
+</div>
+
+<!-- T2 -->
+<div class="box">
+  <span class="tag">T2</span> capture="environment" (cámara trasera)
+  <br><br>
+  <input type="file" accept="image/*" capture="environment" onchange="log('T2-capture-env',this)">
+</div>
+
+<!-- T3 -->
+<div class="box">
+  <span class="tag">T3</span> capture="user" (cámara frontal)
+  <br><br>
+  <input type="file" accept="image/*" capture="user" onchange="log('T3-capture-user',this)">
+</div>
+
+<!-- T4 -->
+<div class="box">
+  <span class="tag">T4</span> &lt;label&gt; + input display:none
+  <br><br>
+  <label class="btn">
+    Seleccionar foto
+    <input type="file" accept="image/*" style="display:none" onchange="log('T4-label-hidden',this)">
+  </label>
+</div>
+
+<!-- T5 -->
+<div class="box">
+  <span class="tag">T5</span> input transparente sobre botón (overlay)
+  <br><br>
+  <div style="position:relative;display:inline-flex">
+    <div class="btn">Seleccionar foto</div>
+    <input type="file" accept="image/*"
+      style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"
+      onchange="log('T5-overlay',this)">
+  </div>
+</div>
+
+<!-- T6 -->
+<div class="box">
+  <span class="tag">T6</span> button + input.click() programático
+  <br><br>
+  <button class="btn" onclick="document.getElementById('t6i').click()">Seleccionar foto</button>
+  <input id="t6i" type="file" accept="image/*" style="display:none" onchange="log('T6-programmatic',this)">
+</div>
+
+<!-- LOG -->
+<div id="log"><span style="color:#555">Toca un botón para ver resultados...</span></div>
+
+<script>
+function log(label, inp) {
+  var f = inp.files && inp.files[0];
+  var msg = f
+    ? '✅ ' + label + ': ' + f.name + ' (' + (f.size/1024).toFixed(1) + ' KB)'
+    : '❌ ' + label + ': no file selected';
+  var ok = !!f;
+  var el = document.getElementById('log');
+  var ts = new Date().toLocaleTimeString();
+  el.innerHTML = '<div class="' + (ok?'ok':'err') + '"><span class="ts">' + ts + ' </span>' + msg + '</div>' + el.innerHTML;
+  inp.value = '';
+}
+</script>
+</body>
+</html>
