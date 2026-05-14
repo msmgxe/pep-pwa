@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
   IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent,
@@ -76,10 +76,6 @@ export default function HomePage() {
   useEffect(() => { load() }, [])
 
   const handleLogout = async () => { await signOut(); history.replace('/login') }
-
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-
-  const handleAvatarPhoto = () => avatarInputRef.current?.click()
 
   const onAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -167,20 +163,18 @@ export default function HomePage() {
                         : <span style={{ fontSize: 30 }}>{profile?.sex === 'male' ? '👨' : profile?.sex === 'female' ? '👩' : '👤'}</span>
                       }
                     </div>
-                    <IonButton
-                      fill="solid" size="small" color="light"
-                      onClick={handleAvatarPhoto}
+                    <label
+                      htmlFor="avatar-upload"
                       style={{
                         position: 'absolute', bottom: -6, right: -6,
-                        '--border-radius': '50%',
-                        '--padding-start': '4px', '--padding-end': '4px',
-                        '--padding-top': '4px', '--padding-bottom': '4px',
-                        width: 28, height: 28,
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.3)'
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: '#fff', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.35)'
                       }}
                     >
-                      <IonIcon icon={cameraOutline} style={{ fontSize: 14, color: 'var(--pep-purple)' }} />
-                    </IonButton>
+                      <IonIcon icon={cameraOutline} style={{ fontSize: 15, color: 'var(--pep-purple)', pointerEvents: 'none' }} />
+                    </label>
                   </div>
                   <div>
                     <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
@@ -322,9 +316,9 @@ export default function HomePage() {
           </div>
         </IonModal>
 
-        {/* Hidden file input for avatar upload */}
+        {/* Hidden file input for avatar upload — triggered by label htmlFor */}
         <input
-          ref={avatarInputRef}
+          id="avatar-upload"
           type="file"
           accept="image/*"
           style={{ display: 'none' }}
