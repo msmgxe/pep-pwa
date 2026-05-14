@@ -82,8 +82,11 @@ export default function HomePage() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
+    input.style.display = 'none'
+    document.body.appendChild(input)
     input.onchange = async () => {
       const file = input.files?.[0]
+      document.body.removeChild(input)
       if (!file) return
       const url = await uploadPhoto(file, profile.id)
       await upsertProfile({ photo_url: url })
@@ -169,18 +172,20 @@ export default function HomePage() {
                         : <span style={{ fontSize: 30 }}>{profile?.sex === 'male' ? '👨' : profile?.sex === 'female' ? '👩' : '👤'}</span>
                       }
                     </div>
-                    <div
+                    <IonButton
+                      fill="solid" size="small" color="light"
                       onClick={handleAvatarPhoto}
                       style={{
-                        position: 'absolute', bottom: -2, right: -2,
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: '#fff', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.25)'
+                        position: 'absolute', bottom: -6, right: -6,
+                        '--border-radius': '50%',
+                        '--padding-start': '4px', '--padding-end': '4px',
+                        '--padding-top': '4px', '--padding-bottom': '4px',
+                        width: 28, height: 28,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.3)'
                       }}
                     >
-                      <IonIcon icon={cameraOutline} style={{ fontSize: 13, color: 'var(--pep-purple)' }} />
-                    </div>
+                      <IonIcon icon={cameraOutline} style={{ fontSize: 14, color: 'var(--pep-purple)' }} />
+                    </IonButton>
                   </div>
                   <div>
                     <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
