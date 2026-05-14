@@ -96,7 +96,12 @@ export default function ProfilePage() {
               <IonIcon icon={arrowBackOutline} />
             </IonButton>
           </IonButtons>
-          <IonTitle>{t('profile_title')}</IonTitle>
+          <IonTitle>
+            <div style={{ lineHeight: 1.2, textAlign: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{t('app_name')}</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>{t('profile_title')}</div>
+            </div>
+          </IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleSave} disabled={saving} strong>
               {saving ? <IonSpinner name="crescent" style={{ width: 18, height: 18 }} /> : t('save')}

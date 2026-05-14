@@ -226,7 +226,12 @@ export default function WeightPage() {
         <IonModal isOpen={showModal} onDidDismiss={() => { closeCam(); setShowModal(false) }}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>{editing ? t('weight_edit_dialog') : t('weight_add_dialog')}</IonTitle>
+              <IonTitle>
+                <div style={{ lineHeight: 1.2, textAlign: 'center' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{t('app_name')}</div>
+                  <div style={{ fontSize: 10, opacity: 0.7 }}>{editing ? t('weight_edit_dialog') : t('weight_add_dialog')}</div>
+                </div>
+              </IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowModal(false)}>{t('cancel')}</IonButton>
               </IonButtons>
