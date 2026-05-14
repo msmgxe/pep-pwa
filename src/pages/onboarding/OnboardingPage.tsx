@@ -192,6 +192,9 @@ export default function OnboardingPage() {
                   <IonContent>
                     <IonDatetime
                       presentation="date"
+                      showDefaultButtons
+                      doneText="Confirmar"
+                      cancelText="Cancelar"
                       max={new Date().toISOString()}
                       value={form.birth_date || undefined}
                       onIonChange={e => {
@@ -199,6 +202,7 @@ export default function OnboardingPage() {
                         set('birth_date', (v ?? '').split('T')[0])
                         setShowDatePicker(false)
                       }}
+                      onIonCancel={() => setShowDatePicker(false)}
                     />
                   </IonContent>
                 </IonModal>
