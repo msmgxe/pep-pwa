@@ -38,6 +38,7 @@ export default function RemindersPage() {
   const [editing, setEditing] = useState<CalendarEvent | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [formTitle, setFormTitle] = useState('')
   const [formNotes, setFormNotes] = useState('')
 
@@ -71,13 +72,25 @@ export default function RemindersPage() {
     if (!profile || !formTitle.trim()) return
     setSaving(true)
     try {
-      const data = { patient_id: profile.id, event_date: selected, title: formTitle.trim(), description: formNotes.trim() || undefined }
-      if (editing) await updateCalendarEvent(editing.id, data)
-      else await addCalendarEvent(data)
-      await load()
+      if (editing) {
+        await updateCalendarEvent(editing.id, {
+          event_date: selected,
+          title: formTitle.trim(),
+          description: formNotes.trim() || undefined,
+        })
+      } else {
+        await addCalendarEvent({
+          patient_id: profile.id,
+          event_date: selected,
+          title: formTitle.trim(),
+          description: formNotes.trim() || undefined,
+        })
+      }
       setShowModal(false)
+      load()
     } catch (e) {
       console.error('Error saving reminder:', e)
+      setSaveError(e instanceof Error ? e.message : String(e))
     } finally {
       setSaving(false)
     }
@@ -249,6 +262,14 @@ export default function RemindersPage() {
             </IonButton>
           </IonContent>
         </IonModal>
+
+        <IonAlert
+          isOpen={!!saveError}
+          header="Error"
+          message={saveError ?? ''}
+          buttons={[{ text: t('cancel'), handler: () => setSaveError(null) }]}
+          onDidDismiss={() => setSaveError(null)}
+        />
 
         <IonAlert
           isOpen={!!deleteTarget}
