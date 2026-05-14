@@ -1,14 +1,14 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
   IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent,
   IonModal, IonInput
 } from '@ionic/react'
-import { personOutline, logOutOutline, createOutline, cameraOutline, closeOutline, imageOutline } from 'ionicons/icons'
+import { personOutline, logOutOutline, createOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
 import {
-  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile, uploadPhoto,
+  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile,
   type Profile, type Measurement, type CalendarEvent
 } from '../../services/supabase'
 
@@ -53,14 +53,6 @@ export default function HomePage() {
   const [targetInput, setTargetInput] = useState('')
   const [savingTarget, setSavingTarget] = useState(false)
 
-  // Camera modal
-  const [showCamera, setShowCamera] = useState(false)
-  const [cameraReady, setCameraReady] = useState(false)
-  const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const [cameraError, setCameraError] = useState('')
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-
   const load = async () => {
     try {
       const p = await getProfile()
@@ -83,72 +75,6 @@ export default function HomePage() {
   useEffect(() => { load() }, [])
 
   const handleLogout = async () => { await signOut(); history.replace('/login') }
-
-  // ── Camera helpers ──────────────────────────────────────────────
-  const openCamera = async () => {
-    setCameraError('')
-    setCameraReady(false)
-    setShowCamera(true)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } },
-        audio: false,
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.onloadedmetadata = () => setCameraReady(true)
-      }
-    } catch (e: any) {
-      setCameraError('No se pudo acceder a la cámara. Verifica los permisos.')
-    }
-  }
-
-  const closeCamera = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    streamRef.current = null
-    setCameraReady(false)
-    setShowCamera(false)
-    setCameraError('')
-  }
-
-  const capturePhoto = async () => {
-    if (!videoRef.current || !profile?.id) return
-    const video = videoRef.current
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    canvas.getContext('2d')?.drawImage(video, 0, 0)
-    canvas.toBlob(async (blob) => {
-      if (!blob) return
-      setUploadingPhoto(true)
-      closeCamera()
-      try {
-        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
-        const url = await uploadPhoto(file, profile.id)
-        await upsertProfile({ photo_url: url })
-        setProfile(p => p ? { ...p, photo_url: url } : p)
-      } finally {
-        setUploadingPhoto(false)
-      }
-    }, 'image/jpeg', 0.85)
-  }
-
-  // file input fallback (gallery) — kept for browsers where getUserMedia is unavailable
-  const galleryInputRef = useRef<HTMLInputElement>(null)
-  const onGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file || !profile?.id) return
-    setUploadingPhoto(true)
-    try {
-      const url = await uploadPhoto(file, profile.id)
-      await upsertProfile({ photo_url: url })
-      setProfile(p => p ? { ...p, photo_url: url } : p)
-    } finally {
-      setUploadingPhoto(false)
-    }
-  }
 
   // ── Target weight helpers ────────────────────────────────────────
   const openTargetEdit = () => {
@@ -213,45 +139,10 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Greeting with avatar */}
+              {/* Greeting */}
               <div className="pep-card" style={{ marginBottom: 12, background: 'var(--pep-purple)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    {/* Avatar circle */}
-                    <div style={{
-                      width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
-                      background: 'rgba(255,255,255,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: '2px solid rgba(255,255,255,0.4)'
-                    }}>
-                      {uploadingPhoto
-                        ? <IonSpinner name="crescent" style={{ '--color': '#fff', width: 24, height: 24 }} />
-                        : profile?.photo_url
-                          ? <img src={profile.photo_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 30 }}>{profile?.sex === 'male' ? '👨' : profile?.sex === 'female' ? '👩' : '👤'}</span>
-                      }
-                    </div>
-                    {/* Camera button — opens in-app camera */}
-                    <IonButton
-                      fill="solid" size="small" color="light"
-                      onClick={openCamera}
-                      style={{
-                        position: 'absolute', bottom: -6, right: -6,
-                        '--border-radius': '50%',
-                        '--padding-start': '5px', '--padding-end': '5px',
-                        '--padding-top': '5px', '--padding-bottom': '5px',
-                        width: 30, height: 30,
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.35)'
-                      }}
-                    >
-                      <IonIcon icon={cameraOutline} style={{ fontSize: 15, color: 'var(--pep-purple)' }} />
-                    </IonButton>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
-                    <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>
-                  </div>
-                </div>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
+                <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>
               </div>
 
               {/* Next appointment */}
@@ -359,98 +250,6 @@ export default function HomePage() {
             </>
           )}
         </div>
-
-        {/* ── Camera Modal ─────────────────────────────────────────── */}
-        <IonModal isOpen={showCamera} onDidDismiss={closeCamera}>
-          <div style={{ height: '100%', background: '#000', display: 'flex', flexDirection: 'column' }}>
-            {/* Close button */}
-            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
-              <IonButton fill="clear" color="light" onClick={closeCamera}>
-                <IonIcon icon={closeOutline} style={{ fontSize: 28 }} />
-              </IonButton>
-            </div>
-
-            {/* Video preview */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              {cameraError ? (
-                <div style={{ textAlign: 'center', padding: 32, color: '#fff' }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>📷</div>
-                  <p style={{ fontSize: 15, marginBottom: 24 }}>{cameraError}</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 24 }}>
-                    Puedes subir desde la galería:
-                  </p>
-                  <label style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '12px 24px', borderRadius: 12,
-                    background: '#7B2D8B', color: '#fff', cursor: 'pointer',
-                    fontWeight: 700, fontSize: 15
-                  }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      ref={galleryInputRef}
-                      onChange={e => { closeCamera(); onGalleryChange(e) }}
-                    />
-                    🖼️ Elegir de galería
-                  </label>
-                </div>
-              ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      width: '100%', height: '100%',
-                      objectFit: 'cover',
-                      transform: 'scaleX(-1)' // mirror for selfie
-                    }}
-                  />
-                  {!cameraReady && (
-                    <div style={{ position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <IonSpinner name="crescent" color="light" />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Capture button */}
-            {!cameraError && (
-              <div style={{ padding: '24px 32px', display: 'flex', justifyContent: 'center', gap: 24, background: 'rgba(0,0,0,0.6)' }}>
-                {/* Gallery fallback */}
-                <label style={{
-                  width: 52, height: 52, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.2)', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid rgba(255,255,255,0.4)'
-                }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={e => { closeCamera(); onGalleryChange(e) }}
-                  />
-                  <IonIcon icon={imageOutline} style={{ fontSize: 22, color: '#fff' }} />
-                </label>
-
-                {/* Shutter button */}
-                <div
-                  onClick={capturePhoto}
-                  style={{
-                    width: 72, height: 72, borderRadius: '50%',
-                    background: '#fff', cursor: 'pointer',
-                    border: '4px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 0 0 3px #fff',
-                    opacity: cameraReady ? 1 : 0.4
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </IonModal>
 
         {/* ── Target weight edit modal ─────────────────────────────── */}
         <IonModal isOpen={showTargetEdit} onDidDismiss={() => setShowTargetEdit(false)} style={{ '--height': 'auto' }}>

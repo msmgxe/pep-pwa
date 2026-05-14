@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonSpinner, IonModal, IonInput, IonTextarea,
   IonAlert, IonFab, IonFabButton, IonRefresher, IonRefresherContent,
-  IonButtons, IonDatetime
+  IonButtons
 } from '@ionic/react'
 import { addOutline, trashOutline, createOutline, calendarOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
@@ -38,8 +38,8 @@ export default function RemindersPage() {
   const [editing, setEditing] = useState<CalendarEvent | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ title: '', notes: '' })
-  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const titleRef = useRef<HTMLIonInputElement>(null)
+  const notesRef = useRef<HTMLIonTextareaElement>(null)
 
   const load = async () => {
     try {
@@ -58,25 +58,31 @@ export default function RemindersPage() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ title: '', notes: '' })
     setShowModal(true)
   }
 
   const openEdit = (ev: CalendarEvent) => {
     setEditing(ev)
-    setForm({ title: ev.title, notes: ev.description ?? '' })
     setShowModal(true)
   }
 
   const handleSave = async () => {
-    if (!profile || !form.title) return
+    if (!profile) return
+    const title = String(titleRef.current?.value ?? '').trim()
+    const notes = String(notesRef.current?.value ?? '').trim()
+    if (!title) return
     setSaving(true)
     try {
-      const data = { patient_id: profile.id, event_date: selected, title: form.title, description: form.notes || undefined }
+      const data = { patient_id: profile.id, event_date: selected, title, description: notes || undefined }
       if (editing) await updateCalendarEvent(editing.id, data)
       else await addCalendarEvent(data)
-      await load(); setShowModal(false)
-    } finally { setSaving(false) }
+      await load()
+      setShowModal(false)
+    } catch (e) {
+      console.error('Error saving reminder:', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const prevMonth = () => { if (viewMonth === 0) { setViewYear(y => y-1); setViewMonth(11) } else setViewMonth(m => m-1) }
@@ -184,7 +190,12 @@ export default function RemindersPage() {
           </IonFabButton>
         </IonFab>
 
-        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}
+          onDidPresent={() => {
+            if (titleRef.current) titleRef.current.value = editing?.title ?? ''
+            if (notesRef.current) notesRef.current.value = editing?.description ?? ''
+          }}
+        >
           <IonHeader>
             <IonToolbar>
               <IonTitle>{editing ? t('reminder_edit') : t('reminder_add')}</IonTitle>
@@ -197,11 +208,11 @@ export default function RemindersPage() {
             <p style={{ fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 12 }}>
               {new Date(selected + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            <IonInput label={t('reminder_title_field')} labelPlacement="floating" value={form.title}
-              onIonInput={e => set('title', e.detail.value ?? '')} style={{ marginBottom: 12 }} />
-            <IonTextarea label={t('reminder_notes')} labelPlacement="floating" value={form.notes}
-              onIonInput={e => set('notes', e.detail.value ?? '')} rows={3} style={{ marginBottom: 16 }} />
-            <IonButton expand="block" onClick={handleSave} disabled={saving || !form.title} className="btn-primary">
+            <IonInput ref={titleRef} label={t('reminder_title_field')} labelPlacement="floating"
+              style={{ marginBottom: 12 }} />
+            <IonTextarea ref={notesRef} label={t('reminder_notes')} labelPlacement="floating"
+              rows={3} style={{ marginBottom: 16 }} />
+            <IonButton expand="block" onClick={handleSave} disabled={saving} className="btn-primary">
               {saving ? <IonSpinner name="crescent" /> : t('save')}
             </IonButton>
           </IonContent>
