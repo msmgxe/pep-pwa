@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonSpinner, IonModal, IonInput, IonTextarea,
@@ -33,6 +33,11 @@ export default function WeightPage() {
 
   const [form, setForm] = useState({ date: '', weight: '', notes: '', photoUrl: '' })
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  const [showCam, setShowCam] = useState(false)
+  const [camReady, setCamReady] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   const load = async () => {
     try {
@@ -83,20 +88,42 @@ export default function WeightPage() {
     setMeasurements(prev => prev.filter(m => m.id !== id))
   }
 
-  const handlePhoto = async () => {
-    if (!profile) return
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.capture = 'environment'
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      if (!file) return
-      const url = await uploadPhoto(file, profile.id)
-      set('photoUrl', url)
-      setPhotoPreview(url)
-    }
-    input.click()
+  const openCam = async () => {
+    setCamReady(false)
+    setShowCam(true)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => setCamReady(true)
+      }
+    } catch { setShowCam(false) }
+  }
+
+  const closeCam = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    setCamReady(false)
+    setShowCam(false)
+  }
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !profile) return
+    const v = videoRef.current
+    const c = document.createElement('canvas')
+    c.width = v.videoWidth; c.height = v.videoHeight
+    c.getContext('2d')?.drawImage(v, 0, 0)
+    c.toBlob(async blob => {
+      if (!blob) return
+      closeCam()
+      setSaving(true)
+      try {
+        const url = await uploadPhoto(new File([blob], 'photo.jpg', { type: 'image/jpeg' }), profile.id)
+        set('photoUrl', url)
+        setPhotoPreview(url)
+      } finally { setSaving(false) }
+    }, 'image/jpeg', 0.85)
   }
 
   const removePhoto = () => {
@@ -196,7 +223,7 @@ export default function WeightPage() {
         </IonFab>
 
         {/* Add/Edit Modal */}
-        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+        <IonModal isOpen={showModal} onDidDismiss={() => { closeCam(); setShowModal(false) }}>
           <IonHeader>
             <IonToolbar>
               <IonTitle>{editing ? t('weight_edit_dialog') : t('weight_add_dialog')}</IonTitle>
@@ -248,21 +275,29 @@ export default function WeightPage() {
             {/* Photo section */}
             {photoPreview ? (
               <div style={{ position: 'relative', marginBottom: 12 }}>
-                <img
-                  src={photoPreview}
-                  alt="foto"
-                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }}
-                />
-                <IonButton
-                  fill="clear" size="small" color="danger"
+                <img src={photoPreview} alt="foto"
+                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }} />
+                <IonButton fill="clear" size="small" color="danger"
                   style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', borderRadius: '50%' }}
-                  onClick={removePhoto}
-                >
+                  onClick={removePhoto}>
                   <IonIcon icon={closeCircleOutline} />
                 </IonButton>
               </div>
+            ) : showCam ? (
+              <div style={{ marginBottom: 12, borderRadius: 12, overflow: 'hidden', background: '#000', position: 'relative' }}>
+                <video ref={videoRef} autoPlay playsInline muted
+                  style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 16px', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <IonButton fill="clear" color="light" size="small" onClick={closeCam}>{t('cancel')}</IonButton>
+                  <div onClick={capturePhoto} style={{
+                    width: 54, height: 54, borderRadius: '50%', background: '#fff', cursor: 'pointer',
+                    border: '3px solid rgba(255,255,255,0.5)', opacity: camReady ? 1 : 0.4
+                  }} />
+                  <div style={{ width: 60 }} />
+                </div>
+              </div>
             ) : (
-              <IonButton expand="block" fill="outline" color="primary" onClick={handlePhoto} style={{ marginBottom: 12 }}>
+              <IonButton expand="block" fill="outline" color="primary" onClick={openCam} style={{ marginBottom: 12 }}>
                 <IonIcon icon={cameraOutline} slot="start" /> {t('weight_camera')}
               </IonButton>
             )}

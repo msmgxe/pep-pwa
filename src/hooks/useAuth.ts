@@ -31,7 +31,11 @@ export function useAuth(): AuthState {
       if (event === 'TOKEN_REFRESHED') return
       setUser(session?.user ?? null)
       if (session?.user) {
-        getProfile().then(p => setProfile(p))
+        setLoading(true)
+        getProfile().then(p => {
+          setProfile(p)
+          setLoading(false)
+        }).catch(() => setLoading(false))
       } else {
         setProfile(null)
       }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonIcon, IonSpinner, IonModal, IonInput, IonTextarea,
+  IonButton, IonIcon, IonSpinner, IonModal,
   IonAlert, IonFab, IonFabButton, IonRefresher, IonRefresherContent,
   IonButtons
 } from '@ionic/react'
@@ -38,8 +38,8 @@ export default function RemindersPage() {
   const [editing, setEditing] = useState<CalendarEvent | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const titleRef = useRef<HTMLIonInputElement>(null)
-  const notesRef = useRef<HTMLIonTextareaElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
 
   const load = async () => {
     try {
@@ -195,12 +195,7 @@ export default function RemindersPage() {
           </IonFabButton>
         </IonFab>
 
-        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}
-          onDidPresent={() => {
-            if (titleRef.current) titleRef.current.value = editing?.title ?? ''
-            if (notesRef.current) notesRef.current.value = editing?.description ?? ''
-          }}
-        >
+        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
               <IonTitle>{editing ? t('reminder_edit') : t('reminder_add')}</IonTitle>
@@ -210,13 +205,44 @@ export default function RemindersPage() {
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
-            <p style={{ fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 16 }}>
               {new Date(selected + 'T12:00:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
-            <IonInput ref={titleRef} label={t('reminder_title_field')} labelPlacement="floating"
-              style={{ marginBottom: 12 }} />
-            <IonTextarea ref={notesRef} label={t('reminder_notes')} labelPlacement="floating"
-              rows={3} style={{ marginBottom: 16 }} />
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 6 }}>
+                {t('reminder_title_field')}
+              </label>
+              <input
+                key={`title-${editing?.id ?? 'new'}`}
+                ref={titleRef}
+                type="text"
+                defaultValue={editing?.title ?? ''}
+                style={{
+                  width: '100%', padding: '12px 14px', fontSize: 16, borderRadius: 10,
+                  border: '1.5px solid var(--ion-border-color, #ddd)',
+                  background: 'var(--ion-background-color, #fff)',
+                  color: 'var(--ion-text-color, #000)', boxSizing: 'border-box', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 6 }}>
+                {t('reminder_notes')}
+              </label>
+              <textarea
+                key={`notes-${editing?.id ?? 'new'}`}
+                ref={notesRef}
+                rows={4}
+                defaultValue={editing?.description ?? ''}
+                style={{
+                  width: '100%', padding: '12px 14px', fontSize: 16, borderRadius: 10,
+                  border: '1.5px solid var(--ion-border-color, #ddd)',
+                  background: 'var(--ion-background-color, #fff)',
+                  color: 'var(--ion-text-color, #000)', boxSizing: 'border-box',
+                  resize: 'none', outline: 'none', fontFamily: 'inherit'
+                }}
+              />
+            </div>
             <IonButton expand="block" onClick={handleSave} disabled={saving} className="btn-primary">
               {saving ? <IonSpinner name="crescent" /> : t('save')}
             </IonButton>
