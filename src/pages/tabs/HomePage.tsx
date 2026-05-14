@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
   IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent,
@@ -77,22 +77,17 @@ export default function HomePage() {
 
   const handleLogout = async () => { await signOut(); history.replace('/login') }
 
-  const handleAvatarPhoto = () => {
-    if (!profile?.id) return
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.style.display = 'none'
-    document.body.appendChild(input)
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      document.body.removeChild(input)
-      if (!file) return
-      const url = await uploadPhoto(file, profile.id)
-      await upsertProfile({ photo_url: url })
-      setProfile(p => p ? { ...p, photo_url: url } : p)
-    }
-    input.click()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarPhoto = () => avatarInputRef.current?.click()
+
+  const onAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !profile?.id) return
+    const url = await uploadPhoto(file, profile.id)
+    await upsertProfile({ photo_url: url })
+    setProfile(p => p ? { ...p, photo_url: url } : p)
   }
 
   const openTargetEdit = () => {
@@ -326,6 +321,15 @@ export default function HomePage() {
             </div>
           </div>
         </IonModal>
+
+        {/* Hidden file input for avatar upload */}
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={onAvatarFileChange}
+        />
       </IonContent>
     </IonPage>
   )
