@@ -163,18 +163,28 @@ export default function HomePage() {
                         : <span style={{ fontSize: 30 }}>{profile?.sex === 'male' ? '👨' : profile?.sex === 'female' ? '👩' : '👤'}</span>
                       }
                     </div>
-                    <label
-                      htmlFor="avatar-upload"
-                      style={{
-                        position: 'absolute', bottom: -6, right: -6,
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: '#fff', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.35)'
-                      }}
-                    >
-                      <IonIcon icon={cameraOutline} style={{ fontSize: 15, color: 'var(--pep-purple)', pointerEvents: 'none' }} />
-                    </label>
+                    {/* Camera button: transparent input ON TOP so user taps it directly */}
+                    <div style={{
+                      position: 'absolute', bottom: -6, right: -6,
+                      width: 30, height: 30, borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.95)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+                      overflow: 'hidden'
+                    }}>
+                      <IonIcon icon={cameraOutline} style={{ fontSize: 16, color: 'var(--pep-purple)' }} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={onAvatarFileChange}
+                        style={{
+                          position: 'absolute', inset: 0,
+                          width: '100%', height: '100%',
+                          opacity: 0, cursor: 'pointer',
+                          fontSize: 0
+                        }}
+                      />
+                    </div>
                   </div>
                   <div>
                     <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
@@ -316,14 +326,6 @@ export default function HomePage() {
           </div>
         </IonModal>
 
-        {/* Hidden file input for avatar upload — triggered by label htmlFor */}
-        <input
-          id="avatar-upload"
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={onAvatarFileChange}
-        />
       </IonContent>
     </IonPage>
   )
