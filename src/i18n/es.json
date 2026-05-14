@@ -187,5 +187,8 @@
   "forgot_password_btn": "Enviar enlace",
   "forgot_password_back": "← Volver al inicio de sesión",
   "forgot_password_sent": "¡Enlace enviado! Revisa tu correo (también la carpeta de spam).",
-  "forgot_password_email_empty": "Ingresa tu correo"
+  "forgot_password_email_empty": "Ingresa tu correo",
+  "home_recent_weights": "Últimos pesajes",
+  "tips_delete_title": "Eliminar tip",
+  "tips_delete_confirm": "¿Seguro que deseas eliminar este tip?"
 }

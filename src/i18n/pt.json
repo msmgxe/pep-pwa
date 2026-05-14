@@ -187,5 +187,8 @@
   "forgot_password_btn": "Enviar link",
   "forgot_password_back": "← Voltar ao login",
   "forgot_password_sent": "Link enviado! Verifique seu e-mail (também a pasta de spam).",
-  "forgot_password_email_empty": "Digite seu e-mail"
+  "forgot_password_email_empty": "Digite seu e-mail",
+  "home_recent_weights": "Últimos pesagens",
+  "tips_delete_title": "Excluir dica",
+  "tips_delete_confirm": "Tem certeza que deseja excluir esta dica?"
 }

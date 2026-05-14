@@ -43,6 +43,7 @@ export interface Profile {
   sex?: 'male' | 'female' | 'other'
   height_cm?: number
   weight_kg?: number
+  target_weight_kg?: number
   medications?: string
   role?: string
   photo_url?: string
@@ -102,6 +103,7 @@ export interface Measurement {
   waist_cm?: number
   hip_cm?: number
   notes?: string
+  photo_url?: string
 }
 
 export const getMeasurements = async (profileId: string): Promise<Measurement[]> => {
@@ -184,6 +186,7 @@ export interface Tip {
   category?: string
   is_published: boolean
   published_at?: string
+  image_url?: string
 }
 
 export const getTips = async (): Promise<Tip[]> => {
@@ -194,6 +197,11 @@ export const getTips = async (): Promise<Tip[]> => {
     .order('published_at', { ascending: false })
   if (error) throw error
   return data ?? []
+}
+
+export const deleteTip = async (id: string) => {
+  const { error } = await supabase.from('tips').delete().eq('id', id)
+  if (error) throw error
 }
 
 // ─── Storage ──────────────────────────────────────────────────────────────────

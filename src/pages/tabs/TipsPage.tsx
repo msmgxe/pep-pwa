@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonSpinner, IonRefresher, IonRefresherContent, IonBadge
+  IonSpinner, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonAlert
 } from '@ionic/react'
+import { trashOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
-import { getTips, type Tip } from '../../services/supabase'
+import { getTips, deleteTip, type Tip } from '../../services/supabase'
 
 const CATEGORY_COLORS: Record<string, string> = {
   tip:         '#7B2D8B',
@@ -24,6 +25,7 @@ export default function TipsPage() {
   const { t } = useTranslation()
   const [tips, setTips] = useState<Tip[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const load = async () => {
     try { setTips(await getTips()) }
@@ -31,6 +33,11 @@ export default function TipsPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  const handleDelete = async (id: string) => {
+    await deleteTip(id)
+    setTips(prev => prev.filter(t => t.id !== id))
+  }
 
   const catLabel = (cat?: string) => {
     const key = `tips_cat_${cat?.toLowerCase() ?? 'general'}`
@@ -68,13 +75,27 @@ export default function TipsPage() {
                   <h3 style={{ margin: 0, color: 'var(--pep-purple)', fontSize: 16, fontWeight: 700, flex: 1 }}>
                     {tip.title}
                   </h3>
-                  <span style={{
-                    display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 11,
-                    fontWeight: 600, color: '#fff', background: catColor(tip.category), marginLeft: 8, flexShrink: 0
-                  }}>
-                    {catLabel(tip.category)}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 11,
+                      fontWeight: 600, color: '#fff', background: catColor(tip.category)
+                    }}>
+                      {catLabel(tip.category)}
+                    </span>
+                    <IonButton fill="clear" size="small" onClick={() => setDeleteTarget(tip.id)}>
+                      <IonIcon icon={trashOutline} color="danger" style={{ fontSize: 16 }} />
+                    </IonButton>
+                  </div>
                 </div>
+
+                {tip.image_url && (
+                  <img
+                    src={tip.image_url}
+                    alt={tip.title}
+                    style={{ width: '100%', borderRadius: 10, marginBottom: 10, objectFit: 'cover', maxHeight: 200 }}
+                  />
+                )}
+
                 <p style={{ margin: 0, color: 'var(--pep-text)', fontSize: 14, lineHeight: 1.5 }}>
                   {tip.content}
                 </p>
@@ -87,6 +108,17 @@ export default function TipsPage() {
             ))
           )}
         </div>
+
+        <IonAlert
+          isOpen={!!deleteTarget}
+          header={t('tips_delete_title')}
+          message={t('tips_delete_confirm')}
+          buttons={[
+            { text: t('cancel'), role: 'cancel', handler: () => setDeleteTarget(null) },
+            { text: t('delete'), role: 'destructive', handler: () => { handleDelete(deleteTarget!); setDeleteTarget(null) } }
+          ]}
+          onDidDismiss={() => setDeleteTarget(null)}
+        />
       </IonContent>
     </IonPage>
   )

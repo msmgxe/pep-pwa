@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [form, setForm] = useState({
     full_name: '', phone: '', birth_date: '', sex: '',
-    height_cm: '', weight_kg: '', goal_weight: '',
+    height_cm: '', weight_kg: '', target_weight_kg: '',
     weight_unit: 'kg', height_unit: 'cm',
     medications: '',
   })
@@ -40,7 +40,7 @@ export default function ProfilePage() {
           sex:         p.sex ?? '',
           height_cm:   String(p.height_cm ?? ''),
           weight_kg:   String(p.weight_kg ?? ''),
-          goal_weight: '',
+          target_weight_kg: String(p.target_weight_kg ?? ''),
           weight_unit: p.weight_unit ?? 'kg',
           height_unit: p.height_unit ?? 'cm',
           medications: p.medications ?? '',
@@ -61,8 +61,9 @@ export default function ProfilePage() {
         birth_date:  form.birth_date || undefined,
         sex:         (form.sex as Profile['sex']) || undefined,
         height_cm:   form.height_cm ? Number(form.height_cm) : undefined,
-        weight_kg:   form.weight_kg ? Number(form.weight_kg) : undefined,
-        medications: form.medications || undefined,
+        weight_kg:        form.weight_kg ? Number(form.weight_kg) : undefined,
+        target_weight_kg: form.target_weight_kg ? Number(form.target_weight_kg) : undefined,
+        medications:      form.medications || undefined,
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
@@ -152,13 +153,20 @@ export default function ProfilePage() {
               </IonButton>
               <IonModal isOpen={showDatePicker} onDidDismiss={() => setShowDatePicker(false)}>
                 <IonContent>
-                  <IonDatetime presentation="date" max={new Date().toISOString()}
+                  <IonDatetime
+                    presentation="date"
+                    showDefaultButtons
+                    doneText="Confirmar"
+                    cancelText="Cancelar"
+                    max={new Date().toISOString()}
                     value={form.birth_date || undefined}
                     onIonChange={e => {
                       const v = Array.isArray(e.detail.value) ? e.detail.value[0] : e.detail.value
                       set('birth_date', (v ?? '').split('T')[0])
                       setShowDatePicker(false)
-                    }} />
+                    }}
+                    onIonCancel={() => setShowDatePicker(false)}
+                  />
                 </IonContent>
               </IonModal>
               <IonSelect label={t('profile_sex')} labelPlacement="floating" value={form.sex}
@@ -184,7 +192,11 @@ export default function ProfilePage() {
                 value={form.height_cm} onIonInput={e => set('height_cm', e.detail.value ?? '')} style={{ marginBottom: 12 }} />
               <IonInput label={t('profile_weight', { unit: form.weight_unit })}
                 labelPlacement="floating" type="number" inputmode="decimal"
-                value={form.weight_kg} onIonInput={e => set('weight_kg', e.detail.value ?? '')} />
+                value={form.weight_kg} onIonInput={e => set('weight_kg', e.detail.value ?? '')}
+                style={{ marginBottom: 12 }} />
+              <IonInput label={t('profile_target', { unit: form.weight_unit })}
+                labelPlacement="floating" type="number" inputmode="decimal"
+                value={form.target_weight_kg} onIonInput={e => set('target_weight_kg', e.detail.value ?? '')} />
             </div>
 
             {/* Medications */}

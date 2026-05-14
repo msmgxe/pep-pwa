@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
-  IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent
+  IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent,
+  IonModal, IonInput
 } from '@ionic/react'
-import { personOutline, logOutOutline } from 'ionicons/icons'
+import { personOutline, logOutOutline, createOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
-import { getProfile, getMeasurements, getCalendarEvents, signOut, type Profile, type Measurement, type CalendarEvent } from '../../services/supabase'
+import {
+  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile,
+  type Profile, type Measurement, type CalendarEvent
+} from '../../services/supabase'
 
 function calcBmi(weightKg: number, heightCm: number) {
   if (!heightCm) return null
@@ -37,13 +41,41 @@ function calcAge(birthDate?: string) {
   return age
 }
 
+function genderAvatar(sex?: string, photoUrl?: string) {
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt="avatar"
+        style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.5)' }}
+      />
+    )
+  }
+  const emoji = sex === 'male' ? '👨' : sex === 'female' ? '👩' : '👤'
+  return (
+    <div style={{
+      width: 52, height: 52, borderRadius: '50%',
+      background: 'rgba(255,255,255,0.2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 28, flexShrink: 0,
+      border: '2px solid rgba(255,255,255,0.4)'
+    }}>
+      {emoji}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { t } = useTranslation()
   const history = useHistory()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [latest, setLatest] = useState<Measurement | null>(null)
+  const [recentMeasurements, setRecentMeasurements] = useState<Measurement[]>([])
   const [nextEvent, setNextEvent] = useState<CalendarEvent | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showTargetEdit, setShowTargetEdit] = useState(false)
+  const [targetInput, setTargetInput] = useState('')
+  const [savingTarget, setSavingTarget] = useState(false)
 
   const load = async () => {
     try {
@@ -57,6 +89,7 @@ export default function HomePage() {
       const next = events.find(e => new Date(e.event_date) >= today) ?? null
       setProfile(p)
       setLatest(measurements[0] ?? null)
+      setRecentMeasurements(measurements.slice(0, 4))
       setNextEvent(next)
     } finally {
       setLoading(false)
@@ -67,8 +100,23 @@ export default function HomePage() {
 
   const handleLogout = async () => { await signOut(); history.replace('/login') }
 
+  const openTargetEdit = () => {
+    setTargetInput(String(profile?.target_weight_kg ?? ''))
+    setShowTargetEdit(true)
+  }
+
+  const saveTarget = async () => {
+    if (!targetInput || isNaN(Number(targetInput))) return
+    setSavingTarget(true)
+    try {
+      await upsertProfile({ target_weight_kg: Number(targetInput) })
+      setProfile(p => p ? { ...p, target_weight_kg: Number(targetInput) } : p)
+      setShowTargetEdit(false)
+    } finally { setSavingTarget(false) }
+  }
+
   const currentWeight = latest?.weight_kg ?? (profile?.weight_kg ?? null)
-  const targetWeight = profile?.weight_kg ?? null
+  const targetWeight = profile?.target_weight_kg ?? null
   const bmi = currentWeight && profile?.height_cm ? calcBmi(currentWeight, profile.height_cm) : null
   const bmiInfo = bmi ? bmiCategory(bmi, t) : null
   const age = calcAge(profile?.birth_date)
@@ -114,10 +162,15 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Greeting */}
+              {/* Greeting with avatar */}
               <div className="pep-card" style={{ marginBottom: 12, background: 'var(--pep-purple)' }}>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
-                <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  {genderAvatar(profile?.sex, profile?.photo_url)}
+                  <div>
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
+                    <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>
+                  </div>
+                </div>
               </div>
 
               {/* Next appointment */}
@@ -142,12 +195,19 @@ export default function HomePage() {
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>kg</div>
                 </div>
-                <div className="pep-card" style={{ flex: 1, textAlign: 'center' }}>
+                <div className="pep-card" style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
                   <div style={{ fontSize: 11, color: 'var(--pep-text-light)', marginBottom: 4 }}>{t('home_target_weight')}</div>
                   <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--pep-purple-dark)' }}>
                     {targetWeight ? `${targetWeight.toFixed(1)}` : '--'}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>kg</div>
+                  <IonButton
+                    fill="clear" size="small"
+                    style={{ position: 'absolute', top: 4, right: 4, '--padding-start': '4px', '--padding-end': '4px' }}
+                    onClick={openTargetEdit}
+                  >
+                    <IonIcon icon={createOutline} color="primary" style={{ fontSize: 16 }} />
+                  </IonButton>
                 </div>
               </div>
 
@@ -169,7 +229,6 @@ export default function HomePage() {
                       <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>{t('bmi_formula')}</div>
                     </div>
                   </div>
-                  {/* BMI bar */}
                   <div style={{ marginTop: 12, height: 8, borderRadius: 4, background: 'linear-gradient(to right, #2196F3 0%, #4CAF50 30%, #FF9800 60%, #F44336 100%)', position: 'relative' }}>
                     <div style={{
                       position: 'absolute', top: -4, width: 16, height: 16,
@@ -186,6 +245,29 @@ export default function HomePage() {
                 </div>
               )}
 
+              {/* Recent weight history */}
+              {recentMeasurements.length > 0 && (
+                <div className="pep-card" style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--pep-text-light)', marginBottom: 10 }}>
+                    {t('home_recent_weights')}
+                  </div>
+                  {recentMeasurements.map((m, i) => (
+                    <div key={m.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '6px 0',
+                      borderTop: i > 0 ? '1px solid var(--pep-purple-mid)' : 'none'
+                    }}>
+                      <div style={{ fontSize: 13, color: 'var(--pep-text-light)' }}>
+                        {new Date(m.measurement_date).toLocaleDateString()}
+                      </div>
+                      <div style={{ fontWeight: 700, color: i === 0 ? 'var(--pep-purple)' : 'var(--pep-text)', fontSize: 15 }}>
+                        {m.weight_kg?.toFixed(1)} <span style={{ fontSize: 11, fontWeight: 400 }}>kg</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Info chips */}
               {profile && (
                 <div className="pep-card" style={{ display: 'flex', gap: 8 }}>
@@ -197,6 +279,32 @@ export default function HomePage() {
             </>
           )}
         </div>
+
+        {/* Target weight edit modal */}
+        <IonModal isOpen={showTargetEdit} onDidDismiss={() => setShowTargetEdit(false)} style={{ '--height': 'auto' }}>
+          <div style={{ padding: 24 }}>
+            <h3 style={{ margin: '0 0 16px', color: 'var(--pep-purple)', fontWeight: 700 }}>
+              {t('home_target_weight')}
+            </h3>
+            <IonInput
+              label="kg"
+              labelPlacement="stacked"
+              type="number"
+              inputmode="decimal"
+              value={targetInput}
+              onIonInput={e => setTargetInput(e.detail.value ?? '')}
+              style={{ marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <IonButton expand="block" fill="outline" color="primary" onClick={() => setShowTargetEdit(false)} style={{ flex: 1 }}>
+                {t('cancel')}
+              </IonButton>
+              <IonButton expand="block" className="btn-primary" onClick={saveTarget} disabled={savingTarget} style={{ flex: 2 }}>
+                {savingTarget ? <IonSpinner name="crescent" /> : t('save')}
+              </IonButton>
+            </div>
+          </div>
+        </IonModal>
       </IonContent>
     </IonPage>
   )

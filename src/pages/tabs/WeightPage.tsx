@@ -3,9 +3,9 @@ import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonSpinner, IonModal, IonInput, IonTextarea,
   IonAlert, IonFab, IonFabButton, IonRefresher, IonRefresherContent,
-  IonList, IonItem, IonLabel, IonText, IonButtons, IonDatetime
+  IonList, IonDatetime, IonButtons
 } from '@ionic/react'
-import { addOutline, trashOutline, createOutline, cameraOutline } from 'ionicons/icons'
+import { addOutline, trashOutline, createOutline, cameraOutline, closeCircleOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import {
   getProfile, getMeasurements, addMeasurement, updateMeasurement,
@@ -29,8 +29,9 @@ export default function WeightPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
-  const [form, setForm] = useState({ date: '', weight: '', notes: '' })
+  const [form, setForm] = useState({ date: '', weight: '', notes: '', photoUrl: '' })
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   const load = async () => {
@@ -47,13 +48,15 @@ export default function WeightPage() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ date: new Date().toISOString().split('T')[0], weight: '', notes: '' })
+    setForm({ date: new Date().toISOString().split('T')[0], weight: '', notes: '', photoUrl: '' })
+    setPhotoPreview(null)
     setShowModal(true)
   }
 
   const openEdit = (m: Measurement) => {
     setEditing(m)
-    setForm({ date: m.measurement_date, weight: String(m.weight_kg ?? ''), notes: m.notes ?? '' })
+    setForm({ date: m.measurement_date, weight: String(m.weight_kg ?? ''), notes: m.notes ?? '', photoUrl: m.photo_url ?? '' })
+    setPhotoPreview(m.photo_url ?? null)
     setShowModal(true)
   }
 
@@ -66,6 +69,7 @@ export default function WeightPage() {
         measurement_date: form.date,
         weight_kg: Number(form.weight),
         notes: form.notes || undefined,
+        photo_url: form.photoUrl || undefined,
       }
       if (editing) await updateMeasurement(editing.id, data)
       else await addMeasurement(data)
@@ -89,10 +93,15 @@ export default function WeightPage() {
       const file = input.files?.[0]
       if (!file) return
       const url = await uploadPhoto(file, profile.id)
-      // attach url to notes field as reference
-      setForm(f => ({ ...f, notes: url }))
+      set('photoUrl', url)
+      setPhotoPreview(url)
     }
     input.click()
+  }
+
+  const removePhoto = () => {
+    set('photoUrl', '')
+    setPhotoPreview(null)
   }
 
   const calcBmi = (weightKg: number) => {
@@ -132,7 +141,7 @@ export default function WeightPage() {
               return (
                 <div key={m.id} className="pep-card" style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 22, color: 'var(--pep-purple)' }}>
                         {m.weight_kg?.toFixed(1)} <span style={{ fontSize: 14 }}>kg</span>
                       </div>
@@ -150,13 +159,23 @@ export default function WeightPage() {
                       )}
                       {m.notes && <div style={{ fontSize: 12, marginTop: 4, color: 'var(--pep-text-light)' }}>{m.notes}</div>}
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <IonButton fill="clear" size="small" onClick={() => openEdit(m)}>
-                        <IonIcon icon={createOutline} color="primary" />
-                      </IonButton>
-                      <IonButton fill="clear" size="small" onClick={() => setDeleteTarget(m.id)}>
-                        <IonIcon icon={trashOutline} color="danger" />
-                      </IonButton>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      {m.photo_url && (
+                        <img
+                          src={m.photo_url}
+                          alt="foto"
+                          style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', cursor: 'pointer' }}
+                          onClick={() => window.open(m.photo_url, '_blank')}
+                        />
+                      )}
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <IonButton fill="clear" size="small" onClick={() => openEdit(m)}>
+                          <IonIcon icon={createOutline} color="primary" />
+                        </IonButton>
+                        <IonButton fill="clear" size="small" onClick={() => setDeleteTarget(m.id)}>
+                          <IonIcon icon={trashOutline} color="danger" />
+                        </IonButton>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -189,6 +208,9 @@ export default function WeightPage() {
               <IonContent>
                 <IonDatetime
                   presentation="date"
+                  showDefaultButtons
+                  doneText="Confirmar"
+                  cancelText="Cancelar"
                   max={new Date().toISOString()}
                   value={form.date || undefined}
                   onIonChange={e => {
@@ -196,6 +218,7 @@ export default function WeightPage() {
                     set('date', (v ?? '').split('T')[0])
                     setShowDatePicker(false)
                   }}
+                  onIonCancel={() => setShowDatePicker(false)}
                 />
               </IonContent>
             </IonModal>
@@ -216,9 +239,29 @@ export default function WeightPage() {
               rows={2}
               style={{ marginBottom: 16 }}
             />
-            <IonButton expand="block" fill="outline" color="primary" onClick={handlePhoto} style={{ marginBottom: 12 }}>
-              <IonIcon icon={cameraOutline} slot="start" /> {t('weight_camera')}
-            </IonButton>
+
+            {/* Photo section */}
+            {photoPreview ? (
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <img
+                  src={photoPreview}
+                  alt="foto"
+                  style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12 }}
+                />
+                <IonButton
+                  fill="clear" size="small" color="danger"
+                  style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', borderRadius: '50%' }}
+                  onClick={removePhoto}
+                >
+                  <IonIcon icon={closeCircleOutline} />
+                </IonButton>
+              </div>
+            ) : (
+              <IonButton expand="block" fill="outline" color="primary" onClick={handlePhoto} style={{ marginBottom: 12 }}>
+                <IonIcon icon={cameraOutline} slot="start" /> {t('weight_camera')}
+              </IonButton>
+            )}
+
             <IonButton expand="block" onClick={handleSave} disabled={saving} className="btn-primary">
               {saving ? <IonSpinner name="crescent" /> : t('save')}
             </IonButton>
