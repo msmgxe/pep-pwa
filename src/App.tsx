@@ -10,6 +10,7 @@ import MainTabs from './pages/tabs/MainTabs'
 import ProfilePage from './pages/tabs/ProfilePage'
 import SupportPage from './pages/tabs/SupportPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import TestUploadPage from './pages/TestUploadPage'
 
 export default function App() {
   const { user, loading, hasProfile } = useAuth()
@@ -29,6 +30,7 @@ export default function App() {
       <IonReactRouter>
         <IonRouterOutlet>
           <Switch>
+            <Route exact path="/test-upload" component={TestUploadPage} />
             <Route exact path="/login" component={LoginPage} />
             <Route exact path="/register" component={RegisterPage} />
             <Route exact path="/otp" component={OTPPage} />
