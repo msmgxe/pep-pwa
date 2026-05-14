@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.DS_Store
+
+# Capacitor
+android/.gradle/
+android/app/build/
+android/app/src/main/assets/public/
+android/capacitor-cordova-android-plugins/
+android/app/release/
+
+# iOS (futuro)
+ios/App/App/public/
+ios/App/Pods/
+ios/.xcode.env.local
+.vercel

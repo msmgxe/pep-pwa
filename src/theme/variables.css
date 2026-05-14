@@ -1,0 +1,73 @@
+/* Pep Education — Brand Colors */
+:root {
+  --pep-purple:       #7B2D8B;
+  --pep-purple-mid:   #C4A2DC;
+  --pep-purple-pale:  #F4EDF8;
+  --pep-purple-dark:  #5a1f66;
+  --pep-yellow:       #FFD700;
+  --pep-yellow-dark:  #e6c200;
+  --pep-text:         #1a1a1a;
+  --pep-text-light:   #666666;
+  --pep-white:        #ffffff;
+  --pep-error:        #dc3545;
+  --pep-success:      #28a745;
+
+  /* Ionic overrides */
+  --ion-color-primary:          var(--pep-purple);
+  --ion-color-primary-rgb:      123,45,139;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade:    var(--pep-purple-dark);
+  --ion-color-primary-tint:     var(--pep-purple-mid);
+
+  --ion-background-color:       var(--pep-purple-pale);
+  --ion-background-color-rgb:   244,237,248;
+  --ion-text-color:             var(--pep-text);
+  --ion-text-color-rgb:         26,26,26;
+
+  --ion-tab-bar-background:     var(--pep-white);
+  --ion-tab-bar-color:          var(--pep-text-light);
+  --ion-tab-bar-color-selected: var(--pep-purple);
+
+  --ion-toolbar-background:     var(--pep-purple);
+  --ion-toolbar-color:          #ffffff;
+
+  --ion-font-family:            -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Utility classes */
+.pep-card {
+  background: var(--pep-white);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(123, 45, 139, 0.08);
+}
+
+.btn-primary {
+  --background: var(--pep-yellow);
+  --color: var(--pep-text);
+  --border-radius: 12px;
+  font-weight: 700;
+  height: 52px;
+}
+
+.btn-secondary {
+  --background: var(--pep-purple);
+  --color: #ffffff;
+  --border-radius: 12px;
+  font-weight: 600;
+  height: 52px;
+}
+
+ion-content {
+  --background: var(--pep-purple-pale);
+}
+
+ion-header ion-toolbar {
+  --background: var(--pep-purple);
+  --color: #ffffff;
+}
+
+ion-tab-bar {
+  border-top: 1px solid rgba(123, 45, 139, 0.1);
+  height: 64px;
+}

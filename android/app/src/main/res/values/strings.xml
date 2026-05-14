@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pep Education</string>
+    <string name="title_activity_main">Pep Education</string>
+    <string name="package_name">com.pepeducation.app</string>
+    <string name="custom_url_scheme">com.pepeducation.app</string>
+</resources>
