@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonSpinner, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonAlert
+  IonSpinner, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonAlert, IonModal
 } from '@ionic/react'
-import { trashOutline } from 'ionicons/icons'
+import { trashOutline, closeOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { getTips, deleteTip, type Tip } from '../../services/supabase'
 
@@ -26,6 +26,7 @@ export default function TipsPage() {
   const [tips, setTips] = useState<Tip[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const load = async () => {
     try { setTips(await getTips()) }
@@ -92,7 +93,8 @@ export default function TipsPage() {
                   <img
                     src={tip.image_url}
                     alt={tip.title}
-                    style={{ width: '100%', borderRadius: 10, marginBottom: 10, objectFit: 'cover', maxHeight: 200 }}
+                    onClick={() => setLightboxUrl(tip.image_url!)}
+                    style={{ width: '100%', borderRadius: 10, marginBottom: 10, objectFit: 'cover', maxHeight: 200, cursor: 'pointer' }}
                   />
                 )}
 
@@ -119,6 +121,26 @@ export default function TipsPage() {
           ]}
           onDidDismiss={() => setDeleteTarget(null)}
         />
+
+        {/* Lightbox */}
+        <IonModal isOpen={!!lightboxUrl} onDidDismiss={() => setLightboxUrl(null)}>
+          <div style={{ position: 'relative', width: '100%', height: '100%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IonButton
+              fill="clear" color="light"
+              style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}
+              onClick={() => setLightboxUrl(null)}
+            >
+              <IonIcon icon={closeOutline} style={{ fontSize: 28 }} />
+            </IonButton>
+            {lightboxUrl && (
+              <img
+                src={lightboxUrl}
+                alt="imagen"
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            )}
+          </div>
+        </IonModal>
       </IonContent>
     </IonPage>
   )

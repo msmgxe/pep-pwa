@@ -4,11 +4,11 @@ import {
   IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent,
   IonModal, IonInput
 } from '@ionic/react'
-import { personOutline, logOutOutline, createOutline } from 'ionicons/icons'
+import { personOutline, logOutOutline, createOutline, cameraOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
 import {
-  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile,
+  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile, uploadPhoto,
   type Profile, type Measurement, type CalendarEvent
 } from '../../services/supabase'
 
@@ -41,29 +41,6 @@ function calcAge(birthDate?: string) {
   return age
 }
 
-function genderAvatar(sex?: string, photoUrl?: string) {
-  if (photoUrl) {
-    return (
-      <img
-        src={photoUrl}
-        alt="avatar"
-        style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.5)' }}
-      />
-    )
-  }
-  const emoji = sex === 'male' ? '👨' : sex === 'female' ? '👩' : '👤'
-  return (
-    <div style={{
-      width: 52, height: 52, borderRadius: '50%',
-      background: 'rgba(255,255,255,0.2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 28, flexShrink: 0,
-      border: '2px solid rgba(255,255,255,0.4)'
-    }}>
-      {emoji}
-    </div>
-  )
-}
 
 export default function HomePage() {
   const { t } = useTranslation()
@@ -99,6 +76,21 @@ export default function HomePage() {
   useEffect(() => { load() }, [])
 
   const handleLogout = async () => { await signOut(); history.replace('/login') }
+
+  const handleAvatarPhoto = () => {
+    if (!profile?.id) return
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const url = await uploadPhoto(file, profile.id)
+      await upsertProfile({ photo_url: url })
+      setProfile(p => p ? { ...p, photo_url: url } : p)
+    }
+    input.click()
+  }
 
   const openTargetEdit = () => {
     setTargetInput(String(profile?.target_weight_kg ?? ''))
@@ -165,7 +157,31 @@ export default function HomePage() {
               {/* Greeting with avatar */}
               <div className="pep-card" style={{ marginBottom: 12, background: 'var(--pep-purple)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  {genderAvatar(profile?.sex, profile?.photo_url)}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div style={{
+                      width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
+                      background: 'rgba(255,255,255,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '2px solid rgba(255,255,255,0.4)'
+                    }}>
+                      {profile?.photo_url
+                        ? <img src={profile.photo_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 30 }}>{profile?.sex === 'male' ? '👨' : profile?.sex === 'female' ? '👩' : '👤'}</span>
+                      }
+                    </div>
+                    <div
+                      onClick={handleAvatarPhoto}
+                      style={{
+                        position: 'absolute', bottom: -2, right: -2,
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: '#fff', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.25)'
+                      }}
+                    >
+                      <IonIcon icon={cameraOutline} style={{ fontSize: 13, color: 'var(--pep-purple)' }} />
+                    </div>
+                  </div>
                   <div>
                     <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
                     <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>

@@ -45,7 +45,7 @@ export default function ProgressPage() {
 
   const first = measurements[measurements.length - 1]
   const latest = measurements[0]
-  const goal = profile?.weight_kg
+  const goal = profile?.target_weight_kg
   const diff = first && latest ? (latest.weight_kg ?? 0) - (first.weight_kg ?? 0) : null
   const bmi = latest?.weight_kg && profile?.height_cm ? calcBmi(latest.weight_kg, profile.height_cm) : null
 
