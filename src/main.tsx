@@ -21,6 +21,13 @@ import './theme/variables.css'
 
 setupIonicReact({ mode: 'ios' })
 
+// Force service worker update on every load so new deployments activate immediately
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.update())
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

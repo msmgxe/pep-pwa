@@ -62,7 +62,12 @@ export default function ProgressPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{t('progress_title')}</IonTitle>
+          <IonTitle>
+            <div style={{ lineHeight: 1.2, textAlign: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{t('app_name')}</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>{t('progress_title')}</div>
+            </div>
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
 

@@ -111,9 +111,9 @@ export default function HomePage() {
       <IonHeader>
         <IonToolbar>
           <IonTitle>
-            <div style={{ lineHeight: 1.2 }}>
+            <div style={{ lineHeight: 1.2, textAlign: 'center' }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{t('app_name')}</div>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>{t('app_subtitle')}</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>{t('nav_home')}</div>
             </div>
           </IonTitle>
           <IonButtons slot="end">
@@ -140,9 +140,17 @@ export default function HomePage() {
           ) : (
             <>
               {/* Greeting */}
-              <div className="pep-card" style={{ marginBottom: 12, background: 'var(--pep-purple)' }}>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{greeting(t)}</p>
-                <h2 style={{ margin: '2px 0 0', color: '#fff', fontSize: 22, fontWeight: 700 }}>{name}</h2>
+              <div style={{
+                background: 'var(--pep-purple)', borderRadius: 16,
+                padding: '18px 20px', marginBottom: 12,
+                boxShadow: '0 2px 10px rgba(123,45,139,0.25)'
+              }}>
+                <p style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 500 }}>
+                  {greeting(t)}
+                </p>
+                <h2 style={{ margin: '4px 0 0', color: '#fff', fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>
+                  {name}
+                </h2>
               </div>
 
               {/* Next appointment */}
