@@ -123,6 +123,7 @@
   "reminder_title_empty": "Ingresa un título",
   "reminder_date": "Fecha",
   "reminder_time": "Hora",
+  "reminder_time": "Hora",
   "reminder_notes": "Notas (opcional)",
   "reminder_delete_title": "Eliminar cita",
   "reminder_delete_confirm": "¿Seguro que deseas eliminar esta cita?",

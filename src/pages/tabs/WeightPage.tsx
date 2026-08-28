@@ -9,7 +9,7 @@ import { addOutline, trashOutline, createOutline, cameraOutline, closeCircleOutl
 import { useTranslation } from 'react-i18next'
 import {
   getProfile, getMeasurements, addMeasurement, updateMeasurement,
-  deleteMeasurement, uploadPhoto, syncProfileWeight, type Measurement, type Profile
+  deleteMeasurement, uploadPhoto, getPhotoUrl, syncProfileWeight, type Measurement, type Profile
 } from '../../services/supabase'
 
 function bmiLabel(bmi: number) {
@@ -30,6 +30,8 @@ export default function WeightPage() {
   const [saving, setSaving] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  // Las fotos se guardan como ruta del bucket: hay que firmarlas para mostrarlas.
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
 
   const [form, setForm] = useState({ date: '', weight: '', notes: '', photoUrl: '' })
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -46,6 +48,11 @@ export default function WeightPage() {
       const m = await getMeasurements(p.id)
       setProfile(p)
       setMeasurements(m)
+
+      const signed = await Promise.all(
+        m.filter(x => x.photo_url).map(async x => [x.id, await getPhotoUrl(x.photo_url)] as const),
+      )
+      setPhotoUrls(Object.fromEntries(signed.filter(([, url]) => url)) as Record<string, string>)
     } finally { setLoading(false) }
   }
 
@@ -61,7 +68,7 @@ export default function WeightPage() {
   const openEdit = (m: Measurement) => {
     setEditing(m)
     setForm({ date: m.measurement_date, weight: String(m.weight_kg ?? ''), notes: m.notes ?? '', photoUrl: m.photo_url ?? '' })
-    setPhotoPreview(m.photo_url ?? null)
+    setPhotoPreview(photoUrls[m.id] ?? null)
     setShowModal(true)
   }
 
@@ -127,9 +134,9 @@ export default function WeightPage() {
       closeCam()
       setSaving(true)
       try {
-        const url = await uploadPhoto(new File([blob], 'photo.jpg', { type: 'image/jpeg' }), profile.id)
-        set('photoUrl', url)
-        setPhotoPreview(url)
+        const path = await uploadPhoto(new File([blob], 'photo.jpg', { type: 'image/jpeg' }), profile.id)
+        set('photoUrl', path)
+        setPhotoPreview(await getPhotoUrl(path))
       } finally { setSaving(false) }
     }, 'image/jpeg', 0.85)
   }
@@ -200,12 +207,12 @@ export default function WeightPage() {
                       {m.notes && <div style={{ fontSize: 12, marginTop: 4, color: 'var(--pep-text-light)' }}>{m.notes}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                      {m.photo_url && (
+                      {photoUrls[m.id] && (
                         <img
-                          src={m.photo_url}
+                          src={photoUrls[m.id]}
                           alt="foto"
                           style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', cursor: 'pointer' }}
-                          onClick={() => window.open(m.photo_url, '_blank')}
+                          onClick={() => window.open(photoUrls[m.id], '_blank')}
                         />
                       )}
                       <div style={{ display: 'flex', gap: 4 }}>

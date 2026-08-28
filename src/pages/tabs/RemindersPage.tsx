@@ -15,6 +15,13 @@ import {
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
+// El panel del admin guarda `YYYY-MM-DDTHH:MM:SS` sin zona y lee la marca tal
+// cual. Aquí se hace igual para que la hora que ve el paciente sea la misma.
+function eventTime(ev: CalendarEvent | null): string {
+  const time = ev?.event_date?.substring(11, 16) ?? ''
+  return /^\d{2}:\d{2}$/.test(time) ? time : ''
+}
+
 function buildCalendar(year: number, month: number) {
   const first = new Date(year, month, 1).getDay()
   const days = new Date(year, month + 1, 0).getDate()
@@ -41,6 +48,7 @@ export default function RemindersPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [formTitle, setFormTitle] = useState('')
   const [formNotes, setFormNotes] = useState('')
+  const [formTime, setFormTime] = useState('10:00')
 
   const load = async () => {
     try {
@@ -58,6 +66,7 @@ export default function RemindersPage() {
     if (showModal) {
       setFormTitle(editing?.title ?? '')
       setFormNotes(editing?.notes ?? '')
+      setFormTime(eventTime(editing) || '10:00')
     }
   }, [showModal, editing?.id])
 
@@ -74,14 +83,14 @@ export default function RemindersPage() {
     try {
       if (editing) {
         await updateCalendarEvent(editing.id, {
-          event_date: selected,
+          event_date: `${selected}T${formTime}:00`,
           title: formTitle.trim(),
           notes: formNotes.trim() || undefined,
         })
       } else {
         await addCalendarEvent({
           patient_id: profile.id,
-          event_date: selected,
+          event_date: `${selected}T${formTime}:00`,
           title: formTitle.trim(),
           notes: formNotes.trim() || undefined,
         })
@@ -182,7 +191,14 @@ export default function RemindersPage() {
                 ) : selectedEvents.map(ev => (
                   <div key={ev.id} className="pep-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontWeight: 600, color: 'var(--pep-purple)' }}>{ev.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        {eventTime(ev) && (
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--pep-yellow-dark, #B8860B)', fontVariantNumeric: 'tabular-nums' }}>
+                            {eventTime(ev)}
+                          </span>
+                        )}
+                        <span style={{ fontWeight: 600, color: 'var(--pep-purple)' }}>{ev.title}</span>
+                      </div>
                       {ev.notes && <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>{ev.notes}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -232,6 +248,22 @@ export default function RemindersPage() {
                 type="text"
                 value={formTitle}
                 onChange={e => setFormTitle(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', fontSize: 16, borderRadius: 10,
+                  border: '1.5px solid var(--ion-border-color, #ddd)',
+                  background: 'var(--ion-background-color, #fff)',
+                  color: 'var(--ion-text-color, #000)', boxSizing: 'border-box', outline: 'none'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, color: 'var(--pep-text-light)', marginBottom: 6 }}>
+                {t('reminder_time')}
+              </label>
+              <input
+                type="time"
+                value={formTime}
+                onChange={e => setFormTime(e.target.value || '10:00')}
                 style={{
                   width: '100%', padding: '12px 14px', fontSize: 16, borderRadius: 10,
                   border: '1.5px solid var(--ion-border-color, #ddd)',

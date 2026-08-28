@@ -7,7 +7,7 @@ import {
 import { cameraOutline, arrowBackOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
-import { getProfile, upsertProfile, uploadPhoto, normalizeSex } from '../../services/supabase'
+import { getProfile, upsertProfile, uploadPhoto, getPhotoUrl, normalizeSex } from '../../services/supabase'
 import { setLanguage } from '../../i18n'
 
 export default function ProfilePage() {
@@ -33,7 +33,7 @@ export default function ProfilePage() {
     getProfile().then(p => {
       if (p) {
         setProfileId(p.id)
-        setPhotoUrl(p.photo_url ?? null)
+        getPhotoUrl(p.photo_url).then(setPhotoUrl)
         setForm({
           full_name:   p.full_name ?? '',
           phone:       p.phone ?? '',
@@ -83,9 +83,9 @@ export default function ProfilePage() {
     input.onchange = async () => {
       const file = input.files?.[0]; if (!file) return
       try {
-        const url = await uploadPhoto(file, profileId)
-        await upsertProfile({ photo_url: url })
-        setPhotoUrl(url)
+        const path = await uploadPhoto(file, profileId)
+        await upsertProfile({ photo_url: path })
+        setPhotoUrl(await getPhotoUrl(path))
         setError('')
       } catch (e: any) {
         console.error('[profile] no se pudo subir la foto', e)

@@ -123,6 +123,7 @@
   "reminder_title_empty": "Enter a title",
   "reminder_date": "Date",
   "reminder_time": "Time",
+  "reminder_time": "Time",
   "reminder_notes": "Notes (optional)",
   "reminder_delete_title": "Delete appointment",
   "reminder_delete_confirm": "Are you sure you want to delete this appointment?",

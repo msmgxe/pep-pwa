@@ -123,6 +123,7 @@
   "reminder_title_empty": "Digite um título",
   "reminder_date": "Data",
   "reminder_time": "Hora",
+  "reminder_time": "Hora",
   "reminder_notes": "Notas (opcional)",
   "reminder_delete_title": "Excluir consulta",
   "reminder_delete_confirm": "Tem certeza que deseja excluir esta consulta?",

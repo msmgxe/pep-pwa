@@ -75,8 +75,13 @@ export const getProfile = async (): Promise<Profile | null> => {
 // weight_unit / height_unit NO existen en Supabase: se guardan en localStorage.
 const PROFILE_COLUMNS = [
   'email', 'full_name', 'phone', 'birth_date', 'sex', 'height_cm', 'weight_kg',
-  'target_weight_kg', 'medications', 'role', 'photo_url', 'preferred_language',
+  'target_weight_kg', 'medications', 'photo_url', 'preferred_language',
 ] as const
+
+// El rol NO se acepta desde los formularios: se fija una sola vez al crear el
+// perfil. Si viajara en un update, un administrador que use la app como
+// paciente perdería su acceso al panel.
+export const DEFAULT_ROLE = 'usuario'
 
 // Filas y builds antiguos usan 'male'/'female'; la BD sólo acepta español.
 export const normalizeSex = (value: unknown): Profile['sex'] | undefined => {
@@ -209,6 +214,7 @@ export const upsertProfile = async (updates: Partial<Profile>): Promise<Profile>
       auth_uid: user.id,
       email: payload.email ?? user.email,
       full_name: resolveFullName(user, payload),
+      role: DEFAULT_ROLE,
     })
     .select()
     .single()
@@ -358,11 +364,31 @@ export const getTips = async (): Promise<Tip[]> => {
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
+const PHOTO_BUCKET = 'patient-photos'
+const SIGNED_URL_TTL = 60 * 60 // 1 hora
+
+// Devuelve la ruta dentro del bucket, no una URL: así el bucket puede ser
+// privado y cada visualización se firma con caducidad.
 export const uploadPhoto = async (file: File, profileId: string): Promise<string> => {
-  const fileName = `${profileId}/${Date.now()}.jpg`
+  const path = `${profileId}/${Date.now()}.jpg`
   const { error } = await supabase.storage
-    .from('patient-photos')
-    .upload(fileName, file, { upsert: true })
+    .from(PHOTO_BUCKET)
+    .upload(path, file, { upsert: true })
   if (error) throw error
-  return supabase.storage.from('patient-photos').getPublicUrl(fileName).data.publicUrl
+  return path
+}
+
+// `photo_url` guarda rutas nuevas y URLs públicas de antes del cambio: hay que
+// aceptar ambas mientras queden fotos antiguas en la base.
+export const getPhotoUrl = async (stored?: string | null): Promise<string | null> => {
+  if (!stored) return null
+  if (/^https?:\/\//i.test(stored)) return stored
+  const { data, error } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrl(stored, SIGNED_URL_TTL)
+  if (error) {
+    console.error('[storage] no se pudo firmar la foto', error)
+    return null
+  }
+  return data.signedUrl
 }
