@@ -8,7 +8,7 @@ import { personOutline, logOutOutline, createOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
 import {
-  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile,
+  getProfile, getMeasurements, getCalendarEvents, signOut, upsertProfile, normalizeSex,
   type Profile, type Measurement, type CalendarEvent
 } from '../../services/supabase'
 
@@ -252,7 +252,7 @@ export default function HomePage() {
               {profile && (
                 <div className="pep-card" style={{ display: 'flex', gap: 8 }}>
                   {profile.height_cm && <InfoChip label={t('info_height')} value={`${profile.height_cm} cm`} />}
-                  {profile.sex && <InfoChip label={t('info_sex')} value={profile.sex === 'male' ? t('sex_male') : t('sex_female')} />}
+                  {profile.sex && <InfoChip label={t('info_sex')} value={normalizeSex(profile.sex) === 'masculino' ? t('sex_male') : t('sex_female')} />}
                   {age !== null && <InfoChip label={t('info_age')} value={t('years_suffix', { n: age })} />}
                 </div>
               )}

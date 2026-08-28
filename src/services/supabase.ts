@@ -41,7 +41,8 @@ export interface Profile {
   full_name?: string
   phone?: string
   birth_date?: string
-  sex?: 'male' | 'female' | 'other'
+  // La BD tiene CHECK (sex IN ('femenino','masculino')) — ver 01_schema.sql
+  sex?: 'masculino' | 'femenino'
   height_cm?: number
   weight_kg?: number
   target_weight_kg?: number
@@ -69,10 +70,18 @@ const PROFILE_COLUMNS = [
   'target_weight_kg', 'medications', 'role', 'photo_url', 'preferred_language',
 ] as const
 
+// Filas y builds antiguos usan 'male'/'female'; la BD sólo acepta español.
+export const normalizeSex = (value: unknown): Profile['sex'] | undefined => {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (['masculino', 'male', 'hombre', 'm', 'h'].includes(raw)) return 'masculino'
+  if (['femenino', 'female', 'mujer', 'f'].includes(raw)) return 'femenino'
+  return undefined
+}
+
 const cleanProfilePayload = (updates: Partial<Profile>): Record<string, unknown> => {
   const payload: Record<string, unknown> = {}
   for (const key of PROFILE_COLUMNS) {
-    const value = updates[key]
+    const value = key === 'sex' ? normalizeSex(updates.sex) : updates[key]
     if (value !== undefined) payload[key] = value
   }
   return payload
@@ -143,8 +152,21 @@ export const upsertProfile = async (updates: Partial<Profile>): Promise<Profile>
     .single()
 
   if (error) {
-    // Otra pestaña o una recarga pudo crear el perfil primero: caemos a update.
-    if (error.code === '23505') return updateProfileRow(user.id, payload)
+    if (error.code === '23505') {
+      // Puede ser una carrera (otra pestaña creó el perfil) o una colisión con
+      // el UNIQUE de `email`: una ficha precargada por el admin sin auth_uid,
+      // que RLS no nos deja reclamar desde el cliente.
+      const retry = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('auth_uid', user.id)
+        .maybeSingle()
+      if (retry.data) return updateProfileRow(user.id, payload)
+      throw new Error(
+        'Ya existe una ficha con este correo creada por tu nutricionista. ' +
+        'Pídele que la vincule a tu cuenta para continuar.',
+      )
+    }
     throw error
   }
   return data

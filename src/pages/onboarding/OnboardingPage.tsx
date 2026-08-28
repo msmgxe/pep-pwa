@@ -5,7 +5,7 @@ import {
 } from '@ionic/react'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
-import { upsertProfile } from '../../services/supabase'
+import { upsertProfile, normalizeSex } from '../../services/supabase'
 
 const TOTAL_STEPS = 6
 
@@ -65,7 +65,7 @@ export default function OnboardingPage() {
         weight_kg: form.weight_kg ? Number(form.weight_kg) : undefined,
         height_cm: form.height_cm ? Number(form.height_cm) : undefined,
         birth_date: form.birth_date || undefined,
-        sex: (form.sex as 'male' | 'female' | 'other') || undefined,
+        sex: normalizeSex(form.sex),
         medications: form.medications || undefined,
         role: 'usuario',
       })
@@ -219,8 +219,8 @@ export default function OnboardingPage() {
                 value={form.sex}
                 onIonChange={e => set('sex', e.detail.value)}
               >
-                <IonSelectOption value="male">{t('sex_male')}</IonSelectOption>
-                <IonSelectOption value="female">{t('sex_female')}</IonSelectOption>
+                <IonSelectOption value="masculino">{t('sex_male')}</IonSelectOption>
+                <IonSelectOption value="femenino">{t('sex_female')}</IonSelectOption>
               </IonSelect>
             )}
 

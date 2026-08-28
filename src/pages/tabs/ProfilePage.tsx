@@ -7,7 +7,7 @@ import {
 import { cameraOutline, arrowBackOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
 import { useHistory } from 'react-router-dom'
-import { getProfile, upsertProfile, uploadPhoto, type Profile } from '../../services/supabase'
+import { getProfile, upsertProfile, uploadPhoto, normalizeSex } from '../../services/supabase'
 import { setLanguage } from '../../i18n'
 
 export default function ProfilePage() {
@@ -38,7 +38,7 @@ export default function ProfilePage() {
           full_name:   p.full_name ?? '',
           phone:       p.phone ?? '',
           birth_date:  p.birth_date ?? '',
-          sex:         p.sex ?? '',
+          sex:         normalizeSex(p.sex) ?? '',
           height_cm:   String(p.height_cm ?? ''),
           weight_kg:   String(p.weight_kg ?? ''),
           target_weight_kg: String(p.target_weight_kg ?? ''),
@@ -61,7 +61,7 @@ export default function ProfilePage() {
         full_name:   form.full_name || undefined,
         phone:       form.phone || undefined,
         birth_date:  form.birth_date || undefined,
-        sex:         (form.sex as Profile['sex']) || undefined,
+        sex:         normalizeSex(form.sex),
         height_cm:   form.height_cm ? Number(form.height_cm) : undefined,
         weight_kg:        form.weight_kg ? Number(form.weight_kg) : undefined,
         target_weight_kg: form.target_weight_kg ? Number(form.target_weight_kg) : undefined,
@@ -195,8 +195,8 @@ export default function ProfilePage() {
               </IonModal>
               <IonSelect label={t('profile_sex')} labelPlacement="floating" value={form.sex}
                 onIonChange={e => set('sex', e.detail.value)} style={{ marginTop: 12 }}>
-                <IonSelectOption value="male">{t('sex_male')}</IonSelectOption>
-                <IonSelectOption value="female">{t('sex_female')}</IonSelectOption>
+                <IonSelectOption value="masculino">{t('sex_male')}</IonSelectOption>
+                <IonSelectOption value="femenino">{t('sex_female')}</IonSelectOption>
               </IonSelect>
             </div>
 
