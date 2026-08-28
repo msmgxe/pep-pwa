@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [form, setForm] = useState({
     full_name: '', phone: '', birth_date: '', sex: '',
@@ -41,8 +42,8 @@ export default function ProfilePage() {
           height_cm:   String(p.height_cm ?? ''),
           weight_kg:   String(p.weight_kg ?? ''),
           target_weight_kg: String(p.target_weight_kg ?? ''),
-          weight_unit: p.weight_unit ?? 'kg',
-          height_unit: p.height_unit ?? 'cm',
+          weight_unit: localStorage.getItem('pep_weight_unit') ?? 'kg',
+          height_unit: localStorage.getItem('pep_height_unit') ?? 'cm',
           medications: p.medications ?? '',
         })
       }
@@ -52,6 +53,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     setSaving(true)
+    setError('')
     try {
       localStorage.setItem('pep_weight_unit', form.weight_unit)
       localStorage.setItem('pep_height_unit', form.height_unit)
@@ -67,6 +69,10 @@ export default function ProfilePage() {
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
+    } catch (e: any) {
+      console.error('[profile] no se pudo guardar el perfil', e)
+      const detail = e?.message ? ` (${e.message})` : ''
+      setError(`${t('profile_save_error')}${detail}`)
     } finally { setSaving(false) }
   }
 
@@ -76,9 +82,16 @@ export default function ProfilePage() {
     input.type = 'file'; input.accept = 'image/*'; input.capture = 'user'
     input.onchange = async () => {
       const file = input.files?.[0]; if (!file) return
-      const url = await uploadPhoto(file, profileId)
-      await upsertProfile({ photo_url: url })
-      setPhotoUrl(url)
+      try {
+        const url = await uploadPhoto(file, profileId)
+        await upsertProfile({ photo_url: url })
+        setPhotoUrl(url)
+        setError('')
+      } catch (e: any) {
+        console.error('[profile] no se pudo subir la foto', e)
+        const detail = e?.message ? ` (${e.message})` : ''
+        setError(`${t('profile_save_error')}${detail}`)
+      }
     }
     input.click()
   }
@@ -120,6 +133,12 @@ export default function ProfilePage() {
             {saved && (
               <div style={{ background: '#e8f5e9', borderRadius: 10, padding: '10px 16px', marginBottom: 16, color: '#388e3c', fontWeight: 600, fontSize: 14 }}>
                 ✓ {t('profile_saved')}
+              </div>
+            )}
+
+            {error && (
+              <div style={{ background: '#fdecea', borderRadius: 10, padding: '10px 16px', marginBottom: 16, color: '#c62828', fontWeight: 600, fontSize: 14 }}>
+                {error}
               </div>
             )}
 

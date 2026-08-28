@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://mpdpbfaorquuqvhawwea.supabase.co'
 const SUPABASE_ANON_KEY =
@@ -48,8 +49,6 @@ export interface Profile {
   role?: string
   photo_url?: string
   preferred_language?: string
-  weight_unit?: 'kg' | 'lbs'
-  height_unit?: 'cm' | 'ft'
 }
 
 export const getProfile = async (): Promise<Profile | null> => {
@@ -63,34 +62,92 @@ export const getProfile = async (): Promise<Profile | null> => {
   return data
 }
 
+// Columnas que realmente existen en la tabla `profiles`.
+// weight_unit / height_unit NO existen en Supabase: se guardan en localStorage.
+const PROFILE_COLUMNS = [
+  'email', 'full_name', 'phone', 'birth_date', 'sex', 'height_cm', 'weight_kg',
+  'target_weight_kg', 'medications', 'role', 'photo_url', 'preferred_language',
+] as const
+
+const cleanProfilePayload = (updates: Partial<Profile>): Record<string, unknown> => {
+  const payload: Record<string, unknown> = {}
+  for (const key of PROFILE_COLUMNS) {
+    const value = updates[key]
+    if (value !== undefined) payload[key] = value
+  }
+  return payload
+}
+
+// `full_name` es NOT NULL en la BD. Si el formulario no lo trae, lo recuperamos
+// de los metadatos del registro (o del email) para que el insert nunca falle.
+const resolveFullName = (user: User, payload: Record<string, unknown>): string => {
+  const candidates = [
+    payload.full_name,
+    user.user_metadata?.full_name,
+    user.user_metadata?.name,
+    user.user_metadata?.fullName,
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+  }
+  const emailLocalPart = (user.email ?? '').split('@')[0].trim()
+  return emailLocalPart || 'Usuario'
+}
+
+const updateProfileRow = async (
+  authUid: string,
+  payload: Record<string, unknown>,
+): Promise<Profile> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('auth_uid', authUid)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export const upsertProfile = async (updates: Partial<Profile>): Promise<Profile> => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
+
+  const payload = cleanProfilePayload(updates)
 
   const existing = await supabase
     .from('profiles')
     .select('id')
     .eq('auth_uid', user.id)
     .maybeSingle()
+  if (existing.error) throw existing.error
 
   if (existing.data) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('auth_uid', user.id)
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  } else {
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert({ ...updates, auth_uid: user.id, email: user.email })
-      .select()
-      .single()
-    if (error) throw error
-    return data
+    // Nada que actualizar: devolvemos el perfil tal cual está.
+    if (Object.keys(payload).length === 0) {
+      const current = await getProfile()
+      if (!current) throw new Error('Profile not found')
+      return current
+    }
+    return updateProfileRow(user.id, payload)
   }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      ...payload,
+      auth_uid: user.id,
+      email: payload.email ?? user.email,
+      full_name: resolveFullName(user, payload),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    // Otra pestaña o una recarga pudo crear el perfil primero: caemos a update.
+    if (error.code === '23505') return updateProfileRow(user.id, payload)
+    throw error
+  }
+  return data
 }
 
 // ─── Measurements ─────────────────────────────────────────────────────────────

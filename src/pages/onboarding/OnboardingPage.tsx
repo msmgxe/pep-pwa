@@ -71,7 +71,9 @@ export default function OnboardingPage() {
       })
       history.replace('/tabs/home')
     } catch (e: any) {
-      setError(e.message)
+      console.error('[onboarding] no se pudo guardar el perfil', e)
+      const detail = e?.message ? ` (${e.message})` : ''
+      setError(`${t('onboarding_save_error')}${detail}`)
     } finally {
       setSaving(false)
     }

@@ -170,6 +170,8 @@
   "onboarding_medications_placeholder": "Ex.: Metformina 500mg",
   "onboarding_welcome": "Bem-vindo/a!",
   "onboarding_complete": "Seu perfil está pronto",
+  "onboarding_save_error": "Não conseguimos salvar seu perfil. Verifique sua conexão e tente novamente.",
+  "profile_save_error": "Não conseguimos salvar as alterações. Tente novamente.",
   "bmi_legend_title": "Faixas do IMC",
   "bmi_formula": "IMC = peso (kg) ÷ altura² (m)",
   "bmi_range_underweight": "< 18.5",

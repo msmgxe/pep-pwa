@@ -170,6 +170,8 @@
   "onboarding_medications_placeholder": "E.g.: Metformin 500mg",
   "onboarding_welcome": "Welcome!",
   "onboarding_complete": "Your profile is ready",
+  "onboarding_save_error": "We couldn't save your profile. Check your connection and try again.",
+  "profile_save_error": "We couldn't save your changes. Please try again.",
   "bmi_legend_title": "BMI ranges",
   "bmi_formula": "BMI = weight (kg) ÷ height² (m)",
   "bmi_range_underweight": "< 18.5",
