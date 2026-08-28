@@ -9,7 +9,7 @@ import { addOutline, trashOutline, createOutline, cameraOutline, closeCircleOutl
 import { useTranslation } from 'react-i18next'
 import {
   getProfile, getMeasurements, addMeasurement, updateMeasurement,
-  deleteMeasurement, uploadPhoto, type Measurement, type Profile
+  deleteMeasurement, uploadPhoto, syncProfileWeight, type Measurement, type Profile
 } from '../../services/supabase'
 
 function bmiLabel(bmi: number) {
@@ -78,6 +78,14 @@ export default function WeightPage() {
       }
       if (editing) await updateMeasurement(editing.id, data)
       else await addMeasurement(data)
+
+      // Si este es el pesaje más reciente, el perfil debe reflejarlo: es lo que
+      // el nutricionista ve en su panel (current_weight_kg, bmi, bmi_category).
+      const latest = measurements.find(m => m.id !== editing?.id)
+      if (!latest || form.date >= latest.measurement_date) {
+        await syncProfileWeight(profile, Number(form.weight))
+      }
+
       await load()
       setShowModal(false)
     } finally { setSaving(false) }

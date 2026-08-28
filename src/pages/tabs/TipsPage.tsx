@@ -3,9 +3,9 @@ import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonSpinner, IonRefresher, IonRefresherContent, IonButton, IonIcon, IonAlert, IonModal
 } from '@ionic/react'
-import { trashOutline, closeOutline } from 'ionicons/icons'
+import { closeOutline } from 'ionicons/icons'
 import { useTranslation } from 'react-i18next'
-import { getTips, deleteTip, type Tip } from '../../services/supabase'
+import { getTips, type Tip } from '../../services/supabase'
 
 const CATEGORY_COLORS: Record<string, string> = {
   tip:         '#7B2D8B',
@@ -25,8 +25,6 @@ export default function TipsPage() {
   const { t } = useTranslation()
   const [tips, setTips] = useState<Tip[]>([])
   const [loading, setLoading] = useState(true)
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState('')
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const load = async () => {
@@ -35,16 +33,6 @@ export default function TipsPage() {
   }
 
   useEffect(() => { load() }, [])
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteTip(id)
-      setTips(prev => prev.filter(t => t.id !== id))
-    } catch (e: any) {
-      console.error('[tips] no se pudo eliminar el tip', e)
-      setDeleteError(e?.message ?? 'No se pudo eliminar el tip.')
-    }
-  }
 
   const catLabel = (cat?: string) => {
     const key = `tips_cat_${cat?.toLowerCase() ?? 'general'}`
@@ -94,9 +82,6 @@ export default function TipsPage() {
                     }}>
                       {catLabel(tip.category)}
                     </span>
-                    <IonButton fill="clear" size="small" onClick={() => setDeleteTarget(tip.id)}>
-                      <IonIcon icon={trashOutline} color="danger" style={{ fontSize: 16 }} />
-                    </IonButton>
                   </div>
                 </div>
 
@@ -121,25 +106,6 @@ export default function TipsPage() {
             ))
           )}
         </div>
-
-        <IonAlert
-          isOpen={!!deleteError}
-          onDidDismiss={() => setDeleteError('')}
-          header={t('error')}
-          message={deleteError}
-          buttons={['OK']}
-        />
-
-        <IonAlert
-          isOpen={!!deleteTarget}
-          header={t('tips_delete_title')}
-          message={t('tips_delete_confirm')}
-          buttons={[
-            { text: t('cancel'), role: 'cancel', handler: () => setDeleteTarget(null) },
-            { text: t('delete'), role: 'destructive', handler: () => { handleDelete(deleteTarget!); setDeleteTarget(null) } }
-          ]}
-          onDidDismiss={() => setDeleteTarget(null)}
-        />
 
         {/* Lightbox */}
         <IonModal isOpen={!!lightboxUrl} onDidDismiss={() => setLightboxUrl(null)}>

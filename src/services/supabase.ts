@@ -47,6 +47,14 @@ export interface Profile {
   weight_kg?: number
   target_weight_kg?: number
   medications?: string
+  // El panel del admin lee estas columnas; la PWA las mantiene sincronizadas
+  // con weight_kg / target_weight_kg. Ver README del backup de Supabase.
+  initial_weight_kg?: number
+  current_weight_kg?: number
+  goal_weight_kg?: number
+  bmi?: number
+  bmi_category?: string
+  age?: number
   role?: string
   photo_url?: string
   preferred_language?: string
@@ -103,6 +111,60 @@ const resolveFullName = (user: User, payload: Record<string, unknown>): string =
   return emailLocalPart || 'Usuario'
 }
 
+// Mismas fórmulas y etiquetas que usa el panel del admin, para que ambos
+// muestren exactamente el mismo IMC y la misma categoría.
+export const calcBmi = (weightKg: number, heightCm: number): number =>
+  Number((weightKg / Math.pow(heightCm / 100, 2)).toFixed(1))
+
+export const bmiCategory = (bmi: number): string =>
+  bmi < 18.5 ? 'Bajo peso' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Sobrepeso' : 'Obesidad I'
+
+const calcAge = (birthDate: string): number | undefined => {
+  const born = new Date(birthDate)
+  if (isNaN(born.getTime())) return undefined
+  const today = new Date()
+  let age = today.getFullYear() - born.getFullYear()
+  const monthDiff = today.getMonth() - born.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < born.getDate())) age--
+  return age >= 0 && age < 130 ? age : undefined
+}
+
+const toNumber = (value: unknown): number | undefined => {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+
+// Espeja weight_kg/target_weight_kg en las columnas del admin y recalcula los
+// campos derivados, para que el nutricionista vea los mismos datos.
+const withDerivedFields = (
+  payload: Record<string, unknown>,
+  current: Partial<Profile> | null,
+): Record<string, unknown> => {
+  const body = { ...payload }
+
+  if (body.weight_kg !== undefined) {
+    body.current_weight_kg = body.weight_kg
+    // El peso inicial se fija una sola vez, al crear la ficha.
+    if (current?.initial_weight_kg == null) body.initial_weight_kg = body.weight_kg
+  }
+  if (body.target_weight_kg !== undefined) body.goal_weight_kg = body.target_weight_kg
+
+  const birthDate = (body.birth_date ?? current?.birth_date) as string | undefined
+  if (birthDate) {
+    const age = calcAge(birthDate)
+    if (age !== undefined) body.age = age
+  }
+
+  const weight = toNumber(body.weight_kg ?? current?.weight_kg ?? current?.current_weight_kg)
+  const height = toNumber(body.height_cm ?? current?.height_cm)
+  if (weight && height) {
+    const bmi = calcBmi(weight, height)
+    body.bmi = bmi
+    body.bmi_category = bmiCategory(bmi)
+  }
+  return body
+}
+
 const updateProfileRow = async (
   authUid: string,
   payload: Record<string, unknown>,
@@ -125,7 +187,7 @@ export const upsertProfile = async (updates: Partial<Profile>): Promise<Profile>
 
   const existing = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, height_cm, weight_kg, current_weight_kg, initial_weight_kg, birth_date')
     .eq('auth_uid', user.id)
     .maybeSingle()
   if (existing.error) throw existing.error
@@ -137,13 +199,13 @@ export const upsertProfile = async (updates: Partial<Profile>): Promise<Profile>
       if (!current) throw new Error('Profile not found')
       return current
     }
-    return updateProfileRow(user.id, payload)
+    return updateProfileRow(user.id, withDerivedFields(payload, existing.data))
   }
 
   const { data, error } = await supabase
     .from('profiles')
     .insert({
-      ...payload,
+      ...withDerivedFields(payload, null),
       auth_uid: user.id,
       email: payload.email ?? user.email,
       full_name: resolveFullName(user, payload),
@@ -213,6 +275,24 @@ export const deleteMeasurement = async (id: string) => {
   if (error) throw error
 }
 
+// Al registrar el pesaje más reciente, el admin actualiza el peso actual y el
+// IMC del perfil. La PWA hace lo mismo para que ambos paneles coincidan.
+export const syncProfileWeight = async (profile: Profile, weightKg: number) => {
+  const updates: Partial<Profile> = {
+    weight_kg: weightKg,
+    current_weight_kg: weightKg,
+  }
+  if (profile.initial_weight_kg == null) updates.initial_weight_kg = weightKg
+  const height = toNumber(profile.height_cm)
+  if (height) {
+    const bmi = calcBmi(weightKg, height)
+    updates.bmi = bmi
+    updates.bmi_category = bmiCategory(bmi)
+  }
+  const { error } = await supabase.from('profiles').update(updates).eq('id', profile.id)
+  if (error) throw error
+}
+
 // ─── Calendar Events ──────────────────────────────────────────────────────────
 
 export interface CalendarEvent {
@@ -274,13 +354,6 @@ export const getTips = async (): Promise<Tip[]> => {
     .order('published_at', { ascending: false })
   if (error) throw error
   return data ?? []
-}
-
-export const deleteTip = async (id: string) => {
-  const { data, error } = await supabase.from('tips').delete().eq('id', id).select('id')
-  if (error) throw error
-  // RLS sólo deja borrar tips a los admins: sin filas afectadas no hubo borrado.
-  if (!data || data.length === 0) throw new Error('No tienes permiso para eliminar este tip.')
 }
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
