@@ -57,7 +57,7 @@ export default function RemindersPage() {
   useEffect(() => {
     if (showModal) {
       setFormTitle(editing?.title ?? '')
-      setFormNotes(editing?.description ?? '')
+      setFormNotes(editing?.notes ?? '')
     }
   }, [showModal, editing?.id])
 
@@ -76,14 +76,14 @@ export default function RemindersPage() {
         await updateCalendarEvent(editing.id, {
           event_date: selected,
           title: formTitle.trim(),
-          description: formNotes.trim() || undefined,
+          notes: formNotes.trim() || undefined,
         })
       } else {
         await addCalendarEvent({
           patient_id: profile.id,
           event_date: selected,
           title: formTitle.trim(),
-          description: formNotes.trim() || undefined,
+          notes: formNotes.trim() || undefined,
         })
       }
       setShowModal(false)
@@ -183,7 +183,7 @@ export default function RemindersPage() {
                   <div key={ev.id} className="pep-card" style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontWeight: 600, color: 'var(--pep-purple)' }}>{ev.title}</div>
-                      {ev.description && <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>{ev.description}</div>}
+                      {ev.notes && <div style={{ fontSize: 12, color: 'var(--pep-text-light)' }}>{ev.notes}</div>}
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <IonButton fill="clear" size="small" onClick={() => openEdit(ev)}>

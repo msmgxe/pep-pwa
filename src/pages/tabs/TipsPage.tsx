@@ -26,6 +26,7 @@ export default function TipsPage() {
   const [tips, setTips] = useState<Tip[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const load = async () => {
@@ -36,8 +37,13 @@ export default function TipsPage() {
   useEffect(() => { load() }, [])
 
   const handleDelete = async (id: string) => {
-    await deleteTip(id)
-    setTips(prev => prev.filter(t => t.id !== id))
+    try {
+      await deleteTip(id)
+      setTips(prev => prev.filter(t => t.id !== id))
+    } catch (e: any) {
+      console.error('[tips] no se pudo eliminar el tip', e)
+      setDeleteError(e?.message ?? 'No se pudo eliminar el tip.')
+    }
   }
 
   const catLabel = (cat?: string) => {
@@ -104,7 +110,7 @@ export default function TipsPage() {
                 )}
 
                 <p style={{ margin: 0, color: 'var(--pep-text)', fontSize: 14, lineHeight: 1.5 }}>
-                  {tip.content}
+                  {tip.body}
                 </p>
                 {tip.published_at && (
                   <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--pep-text-light)' }}>
@@ -115,6 +121,14 @@ export default function TipsPage() {
             ))
           )}
         </div>
+
+        <IonAlert
+          isOpen={!!deleteError}
+          onDidDismiss={() => setDeleteError('')}
+          header={t('error')}
+          message={deleteError}
+          buttons={['OK']}
+        />
 
         <IonAlert
           isOpen={!!deleteTarget}

@@ -179,8 +179,6 @@ export interface Measurement {
   patient_id: string
   measurement_date: string
   weight_kg?: number
-  waist_cm?: number
-  hip_cm?: number
   notes?: string
   photo_url?: string
 }
@@ -222,7 +220,7 @@ export interface CalendarEvent {
   patient_id: string
   event_date: string
   title: string
-  description?: string
+  notes?: string
   event_type?: string
 }
 
@@ -261,7 +259,7 @@ export const deleteCalendarEvent = async (id: string) => {
 export interface Tip {
   id: string
   title: string
-  content: string
+  body: string
   category?: string
   is_published: boolean
   published_at?: string
@@ -279,8 +277,10 @@ export const getTips = async (): Promise<Tip[]> => {
 }
 
 export const deleteTip = async (id: string) => {
-  const { error } = await supabase.from('tips').delete().eq('id', id)
+  const { data, error } = await supabase.from('tips').delete().eq('id', id).select('id')
   if (error) throw error
+  // RLS sólo deja borrar tips a los admins: sin filas afectadas no hubo borrado.
+  if (!data || data.length === 0) throw new Error('No tienes permiso para eliminar este tip.')
 }
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
